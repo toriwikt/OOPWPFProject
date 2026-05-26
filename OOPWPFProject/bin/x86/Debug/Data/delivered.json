@@ -1,0 +1,14 @@
+[
+  {
+    "Type": "Store",
+    "ProductName": "Браш",
+    "Quantity": 10,
+    "Price": 300.0,
+    "DeliveryAddress": null,
+    "TrackingNumber": null,
+    "StoreLocation": "Київська 11",
+    "PickupTime": "11:50",
+    "OrderState": "Доставлено",
+    "AssignedCourier": "123"
+  }
+]

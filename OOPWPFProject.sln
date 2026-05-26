@@ -1,0 +1,37 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36429.23 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OOPWPFProject", "OOPWPFProject\OOPWPFProject.csproj", "{6039F50A-341F-46F7-BD52-3BE18B437BEF}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6039F50A-341F-46F7-BD52-3BE18B437BEF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6039F50A-341F-46F7-BD52-3BE18B437BEF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6039F50A-341F-46F7-BD52-3BE18B437BEF}.Debug|x64.ActiveCfg = Debug|x64
+		{6039F50A-341F-46F7-BD52-3BE18B437BEF}.Debug|x64.Build.0 = Debug|x64
+		{6039F50A-341F-46F7-BD52-3BE18B437BEF}.Debug|x86.ActiveCfg = Debug|x86
+		{6039F50A-341F-46F7-BD52-3BE18B437BEF}.Debug|x86.Build.0 = Debug|x86
+		{6039F50A-341F-46F7-BD52-3BE18B437BEF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6039F50A-341F-46F7-BD52-3BE18B437BEF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6039F50A-341F-46F7-BD52-3BE18B437BEF}.Release|x64.ActiveCfg = Release|x64
+		{6039F50A-341F-46F7-BD52-3BE18B437BEF}.Release|x64.Build.0 = Release|x64
+		{6039F50A-341F-46F7-BD52-3BE18B437BEF}.Release|x86.ActiveCfg = Release|x86
+		{6039F50A-341F-46F7-BD52-3BE18B437BEF}.Release|x86.Build.0 = Release|x86
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {B78AC7D6-04FE-4489-A022-B1F300807F66}
+	EndGlobalSection
+EndGlobal

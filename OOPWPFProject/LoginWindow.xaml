@@ -1,0 +1,110 @@
+﻿<Window x:Class="OOPWPFProject.LoginWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Авторизація" Height="480" Width="420"
+        WindowStartupLocation="CenterScreen"
+        Background="#1A2235"
+        ResizeMode="NoResize"
+        WindowStyle="None"
+        AllowsTransparency="True">
+
+    <Border Background="#1A2235" CornerRadius="16">
+        <Grid>
+
+            <!-- Кнопка закрити -->
+            <Button Content="✕" HorizontalAlignment="Right" VerticalAlignment="Top"
+                    Margin="0,12,12,0" Width="32" Height="32"
+                    Background="Transparent" Foreground="#4A5A7A"
+                    BorderThickness="0" Cursor="Hand" FontSize="14"
+                    Click="CloseButton_Click"/>
+
+            <StackPanel VerticalAlignment="Center" Margin="48,0">
+
+                <!-- Логотип -->
+                <TextBlock Text="📦" FontSize="44"
+                           HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                <TextBlock Text="Облік замовлень"
+                           FontSize="20" FontWeight="Bold"
+                           Foreground="#C6A75E" FontFamily="Segoe UI"
+                           HorizontalAlignment="Center"/>
+                <TextBlock Text="Увійдіть до системи"
+                           FontSize="13" Foreground="#4A5A7A"
+                           FontFamily="Segoe UI"
+                           HorizontalAlignment="Center"
+                           Margin="0,6,0,32"/>
+
+                <!-- Логін -->
+                <TextBlock Text="ЛОГІН" FontSize="11" FontWeight="SemiBold"
+                           Foreground="#4A5A7A" FontFamily="Segoe UI"
+                           Margin="0,0,0,6"/>
+                <TextBox x:Name="LoginBox"
+                         FontFamily="Segoe UI" FontSize="14"
+                         Padding="12,10" Margin="0,0,0,16"
+                         Background="#2A3555" Foreground="#E8DCC8"
+                         BorderBrush="#3A4A6A" BorderThickness="1.5"
+                         CaretBrush="#C6A75E"/>
+
+                <!-- Пароль -->
+                <TextBlock Text="ПАРОЛЬ" FontSize="11" FontWeight="SemiBold"
+                           Foreground="#4A5A7A" FontFamily="Segoe UI"
+                           Margin="0,0,0,6"/>
+                <PasswordBox x:Name="PasswordBox"
+                             FontFamily="Segoe UI" FontSize="14"
+                             Padding="12,10" Margin="0,0,0,8"
+                             Background="#2A3555" Foreground="#E8DCC8"
+                             BorderBrush="#3A4A6A" BorderThickness="1.5"/>
+
+                <!-- Помилка -->
+                <TextBlock x:Name="ErrorBlock" Text=""
+                           Foreground="#C0394B" FontFamily="Segoe UI"
+                           FontSize="12" Margin="0,0,0,16"
+                           TextWrapping="Wrap"/>
+
+                <!-- Кнопка входу -->
+                <Button x:Name="LoginButton" Content="Увійти"
+                        FontFamily="Segoe UI" FontSize="14"
+                        FontWeight="SemiBold"
+                        Background="#C6A75E" Foreground="#1A2235"
+                        BorderThickness="0" Padding="0,12"
+                        Cursor="Hand" Click="LoginButton_Click">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="border"
+                                    Background="{TemplateBinding Background}"
+                                    CornerRadius="8"
+                                    Padding="{TemplateBinding Padding}">
+                                <ContentPresenter HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="border" Property="Background" Value="#D4B870"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="border" Property="Background" Value="#B8953A"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+
+                <!-- Підказка -->
+                <Border Background="#162030" CornerRadius="8"
+                        Padding="12,10" Margin="0,20,0,0">
+                    <StackPanel>
+                        <TextBlock Text="Тестові акаунти:" FontSize="11"
+                                   Foreground="#4A5A7A" FontFamily="Segoe UI"
+                                   Margin="0,0,0,4"/>
+                        <TextBlock Text="admin / admin123  →  Адміністратор"
+                                   FontSize="11" Foreground="#8A9BBE"
+                                   FontFamily="Segoe UI"/>
+                        <TextBlock Text="operator / oper123  →  Оператор"
+                                   FontSize="11" Foreground="#8A9BBE"
+                                   FontFamily="Segoe UI"/>
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>
