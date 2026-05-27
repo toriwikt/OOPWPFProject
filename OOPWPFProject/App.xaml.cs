@@ -5,6 +5,11 @@ namespace OOPWPFProject
 {
     public partial class App : Application
     {
+        public App()
+        {
+            QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
+        }
+
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);

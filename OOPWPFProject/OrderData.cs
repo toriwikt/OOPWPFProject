@@ -1,4 +1,5 @@
 ﻿using Microsoft.Data.Sqlite;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 
@@ -16,6 +17,7 @@ namespace OOPWPFProject
         public string PickupTime { get; set; }
         public string OrderState { get; set; }
         public string AssignedCourier { get; set; }
+        public string CreatedAt { get; set; }
 
         public static OrderDto FromOrder(OrderBase order)
         {
@@ -25,7 +27,8 @@ namespace OOPWPFProject
                 Quantity = order.Quantity,
                 Price = order.Price,
                 OrderState = order is IOrderTrackable t ? t.OrderState : "Нове",
-                AssignedCourier = order is IOrderTrackable t2 ? t2.AssignedCourier : ""
+                AssignedCourier = order is IOrderTrackable t2 ? t2.AssignedCourier : "",
+                CreatedAt = order.CreatedAt
             };
 
             if (order is OnlineOrder online)
@@ -53,7 +56,8 @@ namespace OOPWPFProject
                     DeliveryAddress, TrackingNumber)
                 {
                     OrderState = OrderState ?? "Нове",
-                    AssignedCourier = AssignedCourier ?? ""
+                    AssignedCourier = AssignedCourier ?? "",
+                    CreatedAt = CreatedAt ?? DateTime.Now.ToString("yyyy-MM-dd")
                 };
             }
             else
@@ -62,7 +66,8 @@ namespace OOPWPFProject
                     StoreLocation, PickupTime)
                 {
                     OrderState = OrderState ?? "Нове",
-                    AssignedCourier = AssignedCourier ?? ""
+                    AssignedCourier = AssignedCourier ?? "",
+                    CreatedAt = CreatedAt ?? DateTime.Now.ToString("yyyy-MM-dd")
                 };
             }
             return order;
@@ -87,6 +92,8 @@ namespace OOPWPFProject
                         double price = double.Parse(reader["Price"].ToString(), CultureInfo.InvariantCulture);
                         string state = reader["OrderState"].ToString();
                         string courier = reader["AssignedCourier"].ToString();
+                        string created = reader["CreatedAt"]?.ToString()
+                                         ?? DateTime.Now.ToString("yyyy-MM-dd");
 
                         OrderBase order;
                         if (type == "Online")
@@ -96,7 +103,8 @@ namespace OOPWPFProject
                                 reader["TrackingNumber"].ToString())
                             {
                                 OrderState = state,
-                                AssignedCourier = courier
+                                AssignedCourier = courier,
+                                CreatedAt = created
                             };
                         }
                         else
@@ -106,7 +114,8 @@ namespace OOPWPFProject
                                 reader["PickupTime"].ToString())
                             {
                                 OrderState = state,
-                                AssignedCourier = courier
+                                AssignedCourier = courier,
+                                CreatedAt = created
                             };
                         }
                         orders.Add(order);
@@ -126,12 +135,12 @@ namespace OOPWPFProject
                         (Type, ProductName, Quantity, Price,
                          DeliveryAddress, TrackingNumber,
                          StoreLocation, PickupTime,
-                         OrderState, AssignedCourier)
+                         OrderState, AssignedCourier, CreatedAt)
                     VALUES
                         (@type, @name, @qty, @price,
                          @addr, @track,
                          @loc, @pickup,
-                         @state, @courier);", conn);
+                         @state, @courier, @created);", conn);
 
                 if (order is OnlineOrder o)
                 {
@@ -155,6 +164,7 @@ namespace OOPWPFProject
                 cmd.Parameters.AddWithValue("@price", order.Price);
                 cmd.Parameters.AddWithValue("@state", order is IOrderTrackable t ? t.OrderState : "Нове");
                 cmd.Parameters.AddWithValue("@courier", order is IOrderTrackable t2 ? t2.AssignedCourier : "");
+                cmd.Parameters.AddWithValue("@created", order.CreatedAt ?? DateTime.Now.ToString("yyyy-MM-dd"));
                 cmd.ExecuteNonQuery();
             }
         }

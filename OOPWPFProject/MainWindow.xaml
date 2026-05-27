@@ -35,6 +35,51 @@
             </Style.Triggers>
         </Style>
 
+        <Style TargetType="DatePicker">
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Foreground" Value="#E8DCC8"/>
+            <Setter Property="Background" Value="#2A3555"/>
+            <Setter Property="BorderBrush" Value="#3A4A6A"/>
+            <Setter Property="BorderThickness" Value="1.5"/>
+            <Setter Property="Padding" Value="6,5"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="DatePicker">
+                        <Border Background="#2A3555"
+                                BorderBrush="#3A4A6A"
+                                BorderThickness="1.5"
+                                CornerRadius="4">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="32"/>
+                                </Grid.ColumnDefinitions>
+                                <DatePickerTextBox x:Name="PART_TextBox"
+                                                   Grid.Column="0"
+                                                   Foreground="#E8DCC8"
+                                                   Background="Transparent"
+                                                   BorderThickness="0"
+                                                   Padding="8,6"
+                                                   CaretBrush="#C6A75E"
+                                                   SelectionBrush="#C6A75E"/>
+                                <Button x:Name="PART_Button"
+                                        Grid.Column="1"
+                                        Background="Transparent"
+                                        BorderThickness="0"
+                                        Cursor="Hand"
+                                        Focusable="False">
+                                    <TextBlock Text="📅" FontSize="14" Foreground="#C6A75E"
+                                               VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                </Button>
+                                <Popup x:Name="PART_Popup"/>
+                            </Grid>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style TargetType="RadioButton">
             <Setter Property="FontFamily" Value="Segoe UI"/>
             <Setter Property="FontSize" Value="13"/>
@@ -331,18 +376,14 @@
         <!-- ═══ БІЧНА ПАНЕЛЬ ═══ -->
         <Border Grid.Column="0" Background="#162030">
             <DockPanel>
-
-                <!-- Логотип -->
                 <StackPanel DockPanel.Dock="Top" Margin="24,28,24,32">
                     <TextBlock Text="📦" FontSize="36" Margin="0,0,0,10"/>
                     <TextBlock Text="Облік" FontSize="22" FontWeight="Bold"
                                Foreground="#C6A75E" FontFamily="Segoe UI"/>
                     <TextBlock Text="замовлень" FontSize="22" FontWeight="Bold"
                                Foreground="#E8DCC8" FontFamily="Segoe UI"/>
-               
                 </StackPanel>
 
-                <!-- Користувач, вихід і лічильник -->
                 <StackPanel DockPanel.Dock="Bottom" Margin="16,0,16,16">
                     <Border Background="#1F2A44" CornerRadius="10" Padding="16,12" Margin="0,0,0,8">
                         <StackPanel>
@@ -370,7 +411,6 @@
                     </Border>
                 </StackPanel>
 
-                <!-- Навігація -->
                 <StackPanel DockPanel.Dock="Top" Margin="12,0">
                     <Border x:Name="NavOrders" Background="#C6A75E" CornerRadius="8"
                             Margin="0,0,0,6" Cursor="Hand" MouseDown="NavOrders_Click">
@@ -381,7 +421,6 @@
                                        Foreground="#1A2235" FontFamily="Segoe UI"/>
                         </StackPanel>
                     </Border>
-
                     <Border x:Name="NavOps" Background="Transparent" CornerRadius="8"
                             Margin="0,0,0,6" Cursor="Hand" MouseDown="NavOps_Click">
                         <StackPanel Orientation="Horizontal" Margin="16,12">
@@ -391,7 +430,6 @@
                                        Foreground="#8A9BBE" FontFamily="Segoe UI"/>
                         </StackPanel>
                     </Border>
-
                     <Border x:Name="NavStats" Background="Transparent" CornerRadius="8"
                             Margin="0,0,0,6" Cursor="Hand" MouseDown="NavStats_Click">
                         <StackPanel Orientation="Horizontal" Margin="16,12">
@@ -402,7 +440,6 @@
                         </StackPanel>
                     </Border>
                 </StackPanel>
-
             </DockPanel>
         </Border>
 
@@ -413,14 +450,13 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <!-- СТОРІНКА ЗАМОВЛЕНЬ -->
+            <!-- ─── СТОРІНКА ЗАМОВЛЕНЬ ─── -->
             <Grid x:Name="PageOrders" Grid.Row="0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="320"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- Ліва частина — таблиця -->
                 <DockPanel Grid.Column="0" Margin="28,24,14,24">
 
                     <Grid DockPanel.Dock="Top" Margin="0,0,0,12">
@@ -439,6 +475,7 @@
                                 <ComboBoxItem Content="Кількістю"/>
                                 <ComboBoxItem Content="Ціною"/>
                                 <ComboBoxItem Content="Сумою"/>
+                                <ComboBoxItem Content="Датою"/>
                             </ComboBox>
                         </StackPanel>
                     </Grid>
@@ -474,7 +511,17 @@
                         </WrapPanel>
                     </Border>
 
-                    <WrapPanel DockPanel.Dock="Bottom" Margin="0,12,0,0">
+                    <!-- Тост над кнопками -->
+                    <Border DockPanel.Dock="Bottom" x:Name="ToastBorder" Background="#2E7653"
+                            CornerRadius="8" Padding="12,10" Margin="0,4,0,0"
+                            Visibility="Collapsed" HorizontalAlignment="Right">
+                        <TextBlock x:Name="ToastText" Text=""
+                                   Foreground="#E8DCC8" FontFamily="Segoe UI" FontSize="13"
+                                   TextWrapping="Wrap"/>
+                    </Border>
+
+                    <!-- Кнопки дій -->
+                    <WrapPanel DockPanel.Dock="Bottom" Margin="0,4,0,0">
                         <Button x:Name="DeleteButton" Content="🗑 Видалити"
                                 Style="{StaticResource DangerButton}"
                                 Margin="0,0,8,0" Click="DeleteRecord_Click"/>
@@ -491,51 +538,79 @@
                         <Button x:Name="SaveDeliveredButton" Content="💾 Зберегти доставлені"
                                 Style="{StaticResource SuccessButton}"
                                 Margin="0,0,8,0" Click="SaveDelivered_Click"/>
-                        <Button Content="📤 Експорт CSV"
+                        <Button x:Name="ExportCsvButton" Content="📤 Експорт CSV"
                                 Style="{StaticResource SecondaryButton}"
-                                Click="ExportCsv_Click"/>
+                                Margin="0,0,8,0" Click="ExportCsv_Click"/>
+                        <Button Content="🧾 Чек (PDF)"
+                                Style="{StaticResource SecondaryButton}"
+                                Padding="12,9"
+                                Click="GenerateReceipt_Click"/>
                     </WrapPanel>
 
+                    <!-- Пошук за індексом -->
                     <Border DockPanel.Dock="Bottom" Background="#162030" CornerRadius="8"
                             Padding="14,10" Margin="0,8,0,0">
-                        <StackPanel>
-                            <WrapPanel>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <WrapPanel VerticalAlignment="Center">
                                 <TextBlock Text="Індекс:" Foreground="#8A9BBE" FontFamily="Segoe UI"
                                            FontSize="13" VerticalAlignment="Center" Margin="0,0,8,0"/>
                                 <TextBox x:Name="IndexTextBox" Width="60" Margin="0,0,8,0"/>
-                                <Button Content="Показати" Style="{StaticResource SecondaryButton}"
+                                <Button x:Name="ShowIndexButton" Content="Показати"
+                                        Style="{StaticResource SecondaryButton}"
                                         Padding="12,6" Click="ShowByIndex_Click"/>
                             </WrapPanel>
-                            <TextBlock x:Name="IndexResultBlock" TextWrapping="Wrap"
-                                       FontFamily="Segoe UI" FontSize="12"
-                                       Foreground="#C6A75E" Margin="0,6,0,0" MaxHeight="40"/>
-                        </StackPanel>
+                            <TextBlock x:Name="IndexResultBlock" Grid.Column="1"
+                                       Visibility="Collapsed"
+                                       TextWrapping="Wrap" FontFamily="Segoe UI" FontSize="12"
+                                       Foreground="#C6A75E" Margin="16,0,0,0"
+                                       VerticalAlignment="Center"/>
+                        </Grid>
                     </Border>
 
+                    <!-- Таблиця -->
                     <DataGrid x:Name="OrdersDataGrid"
                               ItemsSource="{Binding Orders}"
                               AutoGenerateColumns="False"
                               IsReadOnly="True"
                               SelectionMode="Single">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="Назва товару" Binding="{Binding ProductName}" Width="*"/>
-                            <DataGridTextColumn Header="К-сть" Binding="{Binding Quantity}" Width="60"/>
-                            <DataGridTextColumn Header="Ціна" Binding="{Binding Price, StringFormat=F2}" Width="80"/>
-                            <DataGridTextColumn Header="Сума" Binding="{Binding Total, StringFormat=F2}" Width="90"/>
-                            <DataGridTextColumn Header="Статус" Binding="{Binding OrderState}" Width="120"/>
-                            <DataGridTextColumn Header="Кур'єр" Binding="{Binding AssignedCourier}" Width="100"/>
-                            <DataGridTextColumn Header="Готове" Binding="{Binding ReadyForPickup}" Width="60"/>
+                            <DataGridTextColumn Header="№"            Binding="{Binding Index}"                               Width="50"/>
+                            <DataGridTextColumn Header="Назва товару" Binding="{Binding ProductName}"                         Width="*"/>
+                            <DataGridTextColumn Header="К-сть"        Binding="{Binding Quantity}"                            Width="60"/>
+                            <DataGridTextColumn Header="Ціна"         Binding="{Binding Price, StringFormat=F2}"              Width="80"/>
+                            <DataGridTextColumn Header="Сума"         Binding="{Binding Total, StringFormat=F2}"              Width="90"/>
+                            <DataGridTextColumn Header="Статус"       Binding="{Binding OrderState}"                         Width="120"/>
+                            <DataGridTextColumn Header="Кур'єр"       Binding="{Binding AssignedCourier}"                    Width="100"/>
+                            <DataGridTextColumn Header="Дата"         Binding="{Binding CreatedAt, StringFormat=dd.MM.yyyy}" Width="90"/>
+                            <DataGridTextColumn Header="Готове"       Binding="{Binding ReadyForPickup}"                     Width="60"/>
                         </DataGrid.Columns>
                     </DataGrid>
+
                 </DockPanel>
 
-                <!-- Права частина — форма -->
+                <!-- Форма справа -->
                 <Border Grid.Column="1" Background="#162030">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="24,24,24,24">
 
-                            <TextBlock Text="Нове замовлення" FontSize="17" FontWeight="SemiBold"
-                                       Foreground="#E8DCC8" FontFamily="Segoe UI" Margin="0,0,0,20"/>
+                            <Grid Margin="0,0,0,20">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock x:Name="FormTitle" Text="Нове замовлення" FontSize="17"
+                                           FontWeight="SemiBold" Foreground="#E8DCC8"
+                                           FontFamily="Segoe UI" VerticalAlignment="Center"/>
+                                <Button x:Name="EditModeButton" Grid.Column="1" Content="🖊"
+                                        ToolTip="Редагувати виділене замовлення"
+                                        Style="{StaticResource SecondaryButton}" Padding="10,6"
+                                        Click="EditMode_Click"/>
+                            </Grid>
 
                             <Label Content="ТИП ЗАМОВЛЕННЯ" Style="{StaticResource SectionLabel}"/>
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
@@ -552,6 +627,8 @@
                             <TextBox x:Name="textboxQuantity"/>
                             <Label Content="Ціна (грн)"/>
                             <TextBox x:Name="textboxPrice"/>
+                            <Label Content="Дата замовлення"/>
+                            <DatePicker x:Name="textboxCreatedAt" Margin="0,0,0,10"/>
 
                             <Separator Margin="0,6,0,14"/>
                             <Label Content="ДЕТАЛІ ДОСТАВКИ" Style="{StaticResource SectionLabel}"/>
@@ -576,28 +653,26 @@
 
                             <Separator Margin="0,6,0,14"/>
 
-                            <Button Content="＋  Додати замовлення"
+                            <Button x:Name="AddButton" Content="＋  Додати замовлення"
                                     Style="{StaticResource PrimaryButton}"
                                     Margin="0,0,0,10" HorizontalAlignment="Stretch"
                                     Click="AddRecord_Click"/>
+                            <Button x:Name="CancelEditButton" Content="✕ Скасувати редагування"
+                                    Style="{StaticResource DangerButton}"
+                                    Margin="0,0,0,10" HorizontalAlignment="Stretch"
+                                    Visibility="Collapsed"
+                                    Click="CancelEdit_Click"/>
                             <Button Content="Очистити форму"
                                     Style="{StaticResource SecondaryButton}"
                                     HorizontalAlignment="Stretch"
                                     Click="ClearForm_Click"/>
-
-                            <Border x:Name="ToastBorder" Background="#2E7653" CornerRadius="8"
-                                    Padding="12,10" Margin="0,14,0,0" Visibility="Collapsed">
-                                <TextBlock x:Name="ToastText" Text=""
-                                           Foreground="#E8DCC8" FontFamily="Segoe UI" FontSize="13"
-                                           TextWrapping="Wrap"/>
-                            </Border>
 
                         </StackPanel>
                     </ScrollViewer>
                 </Border>
             </Grid>
 
-            <!-- СТОРІНКА ОПЕРАЦІЙ -->
+            <!-- ─── СТОРІНКА ОПЕРАЦІЙ ─── -->
             <Grid x:Name="PageOps" Grid.Row="0" Visibility="Collapsed">
                 <StackPanel Margin="36,28,36,20">
                     <TextBlock Text="Операції над замовленнями" FontSize="20" FontWeight="SemiBold"
@@ -660,12 +735,36 @@
                 </StackPanel>
             </Grid>
 
-            <!-- СТОРІНКА СТАТИСТИКИ -->
+            <!-- ─── СТОРІНКА СТАТИСТИКИ ─── -->
             <Grid x:Name="PageStats" Grid.Row="0" Visibility="Collapsed">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="36,28,36,20">
+
                         <TextBlock Text="Статистика замовлень" FontSize="20" FontWeight="SemiBold"
-                                   Foreground="#E8DCC8" FontFamily="Segoe UI" Margin="0,0,0,24"/>
+                                   Foreground="#E8DCC8" FontFamily="Segoe UI" Margin="0,0,0,20"/>
+
+                        <Border Background="#162030" CornerRadius="8" Padding="18,14" Margin="0,0,0,20">
+                            <StackPanel>
+                                <TextBlock Text="ФІЛЬТР ЗА ДАТОЮ" FontSize="11" FontWeight="SemiBold"
+                                           Foreground="#4A5A7A" FontFamily="Segoe UI" Margin="0,0,0,12"/>
+                                <WrapPanel VerticalAlignment="Center">
+                                    <TextBlock Text="З:" Foreground="#8A9BBE" FontFamily="Segoe UI"
+                                               FontSize="13" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <DatePicker x:Name="StatDateFrom" Width="140" Margin="0,0,18,0"/>
+                                    <TextBlock Text="По:" Foreground="#8A9BBE" FontFamily="Segoe UI"
+                                               FontSize="13" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <DatePicker x:Name="StatDateTo" Width="140" Margin="0,0,18,0"/>
+                                    <Button Content="Застосувати" Style="{StaticResource PrimaryButton}"
+                                            Padding="14,8" Margin="0,0,8,0"
+                                            Click="StatApplyFilter_Click"/>
+                                    <Button Content="Скинути" Style="{StaticResource SecondaryButton}"
+                                            Padding="14,8" Click="StatResetFilter_Click"/>
+                                </WrapPanel>
+                                <TextBlock x:Name="StatPeriodLabel" Text=""
+                                           Foreground="#8A9BBE" FontFamily="Segoe UI" FontSize="12"
+                                           Margin="0,10,0,0"/>
+                            </StackPanel>
+                        </Border>
 
                         <WrapPanel Margin="0,0,0,20">
                             <Border Background="#162030" CornerRadius="10" Padding="22,18"

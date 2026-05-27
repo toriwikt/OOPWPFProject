@@ -39,8 +39,17 @@ namespace OOPWPFProject
                         StoreLocation   TEXT,
                         PickupTime      TEXT,
                         OrderState      TEXT NOT NULL DEFAULT 'Нове',
-                        AssignedCourier TEXT
+                        AssignedCourier TEXT,
+                        CreatedAt       TEXT DEFAULT '2025-01-01'
                     );", conn).ExecuteNonQuery();
+
+                try
+                {
+                    new SqliteCommand(
+                        "ALTER TABLE Orders ADD COLUMN CreatedAt TEXT DEFAULT '2025-01-01';",
+                        conn).ExecuteNonQuery();
+                }
+                catch { }
 
                 new SqliteCommand(@"
                     CREATE TABLE IF NOT EXISTS Logs (

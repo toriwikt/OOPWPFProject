@@ -1,4 +1,6 @@
-﻿namespace OOPWPFProject
+﻿using System;
+
+namespace OOPWPFProject
 {
     public interface IOrderTrackable
     {
@@ -15,6 +17,7 @@
         public int Quantity { get; set; }
         public double Price { get; set; }
         public double Total => Quantity * Price;
+        public string CreatedAt { get; set; } = DateTime.Now.ToString("yyyy-MM-dd");
 
         protected OrderBase() { }
 
@@ -95,6 +98,7 @@
             $"Номер відстеження: {TrackingNumber}\n" +
             $"Статус: {OrderState}\n" +
             $"Кур'єр: {AssignedCourier}\n" +
+            $"Дата створення: {CreatedAt}\n" +
             $"Готове до отримання: {(IsReadyForPickup() ? "Так" : "Ні")}";
     }
 
@@ -128,6 +132,7 @@
             $"Час отримання: {PickupTime}\n" +
             $"Статус: {OrderState}\n" +
             $"Кур'єр: {AssignedCourier}\n" +
+            $"Дата створення: {CreatedAt}\n" +
             $"Готове до отримання: {(IsReadyForPickup() ? "Так" : "Ні")}";
     }
 }

@@ -1,5 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -8,7 +11,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using Newtonsoft.Json;
 
 namespace OOPWPFProject
 {
@@ -18,6 +20,8 @@ namespace OOPWPFProject
         private EntityManager<OrderBase> _manager;
         private string _currentRole;
         private bool _isLoggingOut = false;
+        private bool _isEditMode = false;
+        private int _editIndex = -1;
 
         private static readonly string DataDir = "Data";
         private static readonly string DeliveredFile = Path.Combine(DataDir, "delivered.json");
@@ -45,6 +49,7 @@ namespace OOPWPFProject
                 : new SolidColorBrush((Color)ColorConverter.ConvertFromString("#8A9BBE"));
 
             LoadOrders();
+            textboxCreatedAt.SelectedDate = DateTime.Now;
             ApplyRoleRestrictions();
             UpdateStatusBar();
         }
@@ -56,6 +61,11 @@ namespace OOPWPFProject
             {
                 DeleteButton.Visibility = Visibility.Collapsed;
                 SaveDeliveredButton.Visibility = Visibility.Collapsed;
+                ExportCsvButton.Visibility = Visibility.Collapsed;
+                EditModeButton.Visibility = Visibility.Collapsed;
+                NavStats.Visibility = Visibility.Collapsed;
+                NavOps.Visibility = Visibility.Collapsed;
+                SortComboBox.Visibility = Visibility.Collapsed;
             }
         }
 
@@ -150,7 +160,7 @@ namespace OOPWPFProject
                 foreach (var order in OrderRepository.LoadAll())
                 {
                     _manager.Add(order);
-                    Orders.Add(new OrderViewModel(order));
+                    Orders.Add(new OrderViewModel(order, _manager.Count - 1)); // ось тут додай індекс
                 }
             }
             catch (System.Exception ex)
@@ -241,7 +251,7 @@ namespace OOPWPFProject
                         (_filterType == "Магазин" && order is StoreOrder);
 
                     if (matchSearch && matchStatus && matchType)
-                        temp.Add(new OrderViewModel(order));
+                        temp.Add(new OrderViewModel(order, i));
                 }
 
                 Orders.Clear();
@@ -255,7 +265,10 @@ namespace OOPWPFProject
         // ── Статистика ───────────────────────────────────────────
         private void UpdateStats()
         {
-            int total = _manager.Count;
+            DateTime dateFrom = StatDateFrom.SelectedDate ?? DateTime.MinValue;
+            DateTime dateTo = (StatDateTo.SelectedDate ?? DateTime.Now).Date.AddDays(1).AddSeconds(-1);
+
+            int total = 0;
             double sum = 0;
             int online = 0, store = 0, delivered = 0;
 
@@ -268,6 +281,14 @@ namespace OOPWPFProject
             for (int i = 0; i < _manager.Count; i++)
             {
                 var order = _manager[i];
+
+                if (DateTime.TryParse(order.CreatedAt, out DateTime created))
+                {
+                    if (created < dateFrom || created > dateTo)
+                        continue;
+                }
+
+                total++;
                 sum += order.Total;
 
                 if (order is OnlineOrder) online++;
@@ -280,6 +301,10 @@ namespace OOPWPFProject
                         statusCounts[t.OrderState]++;
                 }
             }
+
+            string periodLabel = $"{dateFrom:dd.MM.yyyy} — {dateTo:dd.MM.yyyy}";
+            if (StatPeriodLabel != null)
+                StatPeriodLabel.Text = $"Період: {periodLabel}";
 
             StatTotalSum.Text = $"{sum:F2} грн";
             StatTotalCount.Text = total.ToString();
@@ -297,6 +322,18 @@ namespace OOPWPFProject
             }).ToList();
         }
 
+        private void StatApplyFilter_Click(object sender, RoutedEventArgs e)
+        {
+            UpdateStats();
+        }
+
+        private void StatResetFilter_Click(object sender, RoutedEventArgs e)
+        {
+            StatDateFrom.SelectedDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+            StatDateTo.SelectedDate = DateTime.Now;
+            UpdateStats();
+        }
+
         // ── Експорт CSV ──────────────────────────────────────────
         private void ExportCsv_Click(object sender, RoutedEventArgs e)
         {
@@ -312,7 +349,7 @@ namespace OOPWPFProject
                 try
                 {
                     var sb = new StringBuilder();
-                    sb.AppendLine("Назва товару,Кількість,Ціна,Сума,Тип,Статус,Кур'єр,Готове");
+                    sb.AppendLine("Індекс,Назва товару,Кількість,Ціна,Сума,Тип,Статус,Кур'єр,Готове,Дата");
 
                     for (int i = 0; i < _manager.Count; i++)
                     {
@@ -323,9 +360,9 @@ namespace OOPWPFProject
                         string ready = order is IOrderTrackable t3
                             ? (t3.IsReadyForPickup() ? "Так" : "Ні") : "-";
 
-                        sb.AppendLine($"{order.ProductName},{order.Quantity}," +
+                        sb.AppendLine($"{i},{order.ProductName},{order.Quantity}," +
                                       $"{order.Price:F2},{order.Total:F2}," +
-                                      $"{type},{status},{courier},{ready}");
+                                      $"{type},{status},{courier},{ready},{order.CreatedAt}");
                     }
 
                     File.WriteAllText(dialog.FileName, sb.ToString(), Encoding.UTF8);
@@ -338,6 +375,62 @@ namespace OOPWPFProject
                     ShowToast($"✘ Помилка експорту: {ex.Message}", false);
                 }
             }
+        }
+
+        // ── Режим редагування ─────────────────────────────────────
+        private void EditMode_Click(object sender, RoutedEventArgs e)
+        {
+            if (!(OrdersDataGrid.SelectedItem is OrderViewModel selectedVm))
+            {
+                ShowToast("✘ Спочатку виділіть замовлення в таблиці", false);
+            }
+            else
+            {
+                _editIndex = Orders.IndexOf(selectedVm);
+                var order = _manager[_editIndex];
+
+                textboxName.Text = order.ProductName;
+                textboxQuantity.Text = order.Quantity.ToString();
+                textboxPrice.Text = order.Price.ToString();
+                textboxCreatedAt.SelectedDate = DateTime.TryParse(order.CreatedAt, out DateTime d)
+                    ? d : DateTime.Now;
+
+                if (order is OnlineOrder o)
+                {
+                    RadioOnline.IsChecked = true;
+                    textboxDeliveryAddress.Text = o.DeliveryAddress;
+                    textboxTrackingNumber.Text = o.TrackingNumber;
+                    textboxCourier.Text = o.AssignedCourier;
+                }
+                else if (order is StoreOrder s)
+                {
+                    RadioStore.IsChecked = true;
+                    textboxStoreLocation.Text = s.StoreLocation;
+                    textboxPickupTime.Text = s.PickupTime;
+                    textboxCourierStore.Text = s.AssignedCourier;
+                }
+
+                _isEditMode = true;
+                FormTitle.Text = "Редагування замовлення";
+                AddButton.Content = "💾 Зберегти зміни";
+                CancelEditButton.Visibility = Visibility.Visible;
+                ShowToast("✏ Режим редагування");
+            }
+        }
+
+        private void CancelEdit_Click(object sender, RoutedEventArgs e)
+        {
+            ExitEditMode();
+            ClearForm_Click(sender, e);
+        }
+
+        private void ExitEditMode()
+        {
+            _isEditMode = false;
+            _editIndex = -1;
+            FormTitle.Text = "Нове замовлення";
+            AddButton.Content = "＋  Додати замовлення";
+            CancelEditButton.Visibility = Visibility.Collapsed;
         }
 
         // ── Форма ─────────────────────────────────────────────────
@@ -399,32 +492,82 @@ namespace OOPWPFProject
             {
                 try
                 {
-                    OrderBase order;
-                    if (RadioOnline.IsChecked == true)
+                    string createdAt = textboxCreatedAt.SelectedDate?.ToString("yyyy-MM-dd")
+                                       ?? DateTime.Now.ToString("yyyy-MM-dd");
+
+                    if (_isEditMode && _editIndex >= 0)
                     {
-                        var online = new OnlineOrder(
-                            textboxName.Text.Trim(), qty, price,
-                            textboxDeliveryAddress.Text.Trim(),
-                            textboxTrackingNumber.Text.Trim());
-                        online.AssignedCourier = textboxCourier.Text.Trim();
-                        order = online;
+                        // Режим редагування — оновлюємо існуючий запис
+                        OrderBase order;
+                        if (RadioOnline.IsChecked == true)
+                        {
+                            var online = new OnlineOrder(
+                                textboxName.Text.Trim(), qty, price,
+                                textboxDeliveryAddress.Text.Trim(),
+                                textboxTrackingNumber.Text.Trim());
+                            online.AssignedCourier = textboxCourier.Text.Trim();
+                            online.CreatedAt = createdAt;
+                            order = online;
+                        }
+                        else
+                        {
+                            var store = new StoreOrder(
+                                textboxName.Text.Trim(), qty, price,
+                                textboxStoreLocation.Text.Trim(),
+                                textboxPickupTime.Text.Trim());
+                            store.AssignedCourier = textboxCourierStore.Text.Trim();
+                            store.CreatedAt = createdAt;
+                            order = store;
+                        }
+
+                        // Зберігаємо поточний статус
+                        if (_manager[_editIndex] is IOrderTrackable oldT &&
+                            order is IOrderTrackable newT)
+                            newT.UpdateStatus(oldT.OrderState);
+
+                        _manager[_editIndex] = order;
+                        Orders[_editIndex] = new OrderViewModel(order, _editIndex);
+
+                        Logger.Log("Редаговано", $"{order.ProductName}, {order.Quantity} шт., {order.Price:F2} грн");
+                        ShowToast($"✔ Збережено: {order.ProductName}");
+                        UpdateStatusBar($"Відредаговано: {order.ProductName}");
+                        ExitEditMode();
+                        ClearForm_Click(sender, e);
                     }
                     else
                     {
-                        var store = new StoreOrder(
-                            textboxName.Text.Trim(), qty, price,
-                            textboxStoreLocation.Text.Trim(),
-                            textboxPickupTime.Text.Trim());
-                        store.AssignedCourier = textboxCourierStore.Text.Trim();
-                        order = store;
+                        // Звичайний режим — додаємо новий запис
+                        OrderBase order;
+                        if (RadioOnline.IsChecked == true)
+                        {
+                            var online = new OnlineOrder(
+                                textboxName.Text.Trim(), qty, price,
+                                textboxDeliveryAddress.Text.Trim(),
+                                textboxTrackingNumber.Text.Trim());
+                            online.AssignedCourier = textboxCourier.Text.Trim();
+                            online.CreatedAt = createdAt;
+                            order = online;
+                        }
+                        else
+                        {
+                            var store = new StoreOrder(
+                                textboxName.Text.Trim(), qty, price,
+                                textboxStoreLocation.Text.Trim(),
+                                textboxPickupTime.Text.Trim());
+                            store.AssignedCourier = textboxCourierStore.Text.Trim();
+                            store.CreatedAt = createdAt;
+                            order = store;
+                        }
+
+                        _manager.Add(order);
+                        Orders.Add(new OrderViewModel(order, _manager.Count - 1));
+                        Logger.Log("Додано", $"{order.ProductName}, {order.Quantity} шт., {order.Price:F2} грн");
+                        ShowToast($"✔ Додано: {order.ProductName}");
+                        UpdateStatusBar($"Додано: {order.ProductName}");
+                        ClearForm_Click(sender, e);
                     }
 
-                    _manager.Add(order);
-                    Orders.Add(new OrderViewModel(order));
-                    Logger.Log("Додано", $"{order.ProductName}, {order.Quantity} шт., {order.Price:F2} грн");
-                    ShowToast($"✔ Додано: {order.ProductName}");
-                    UpdateStatusBar($"Додано: {order.ProductName}");
-                    ClearForm_Click(sender, e);
+                    textboxCreatedAt.SelectedDate = DateTime.Now;
                 }
                 catch (System.ArgumentException ex)
                 {
@@ -452,7 +595,7 @@ namespace OOPWPFProject
                 {
                     string old = trackable.OrderState;
                     trackable.UpdateStatus(selectedStatus.Content.ToString());
-                    Orders[index] = new OrderViewModel(order);
+                    Orders[index] = new OrderViewModel(order, index);
                     Logger.Log("Змінено", $"Статус '{order.ProductName}': {old} → {trackable.OrderState}");
                     ShowToast($"✔ Статус оновлено: {trackable.OrderState}");
                     UpdateStatusBar($"Статус '{order.ProductName}' оновлено");
@@ -484,6 +627,7 @@ namespace OOPWPFProject
             textboxDeliveryAddress.Clear(); textboxTrackingNumber.Clear();
             textboxCourier.Clear(); textboxStoreLocation.Clear();
             textboxPickupTime.Clear(); textboxCourierStore.Clear();
+            textboxCreatedAt.SelectedDate = DateTime.Now;
 
             var brush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#3A4A6A"));
             foreach (var tb in new[] { textboxName, textboxQuantity, textboxPrice })
@@ -508,6 +652,8 @@ namespace OOPWPFProject
                     pairs.Sort((a, b) => a.order.Quantity.CompareTo(b.order.Quantity));
                 else if (criterion == "Ціною")
                     pairs.Sort((a, b) => a.order.Price.CompareTo(b.order.Price));
+                else if (criterion == "Датою")
+                    pairs.Sort((a, b) => string.Compare(a.order.CreatedAt, b.order.CreatedAt));
                 else
                     pairs.Sort((a, b) => a.order.Total.CompareTo(b.order.Total));
 
@@ -520,32 +666,51 @@ namespace OOPWPFProject
             }
         }
 
+       
+
+
         private void ShowByIndex_Click(object sender, RoutedEventArgs e)
         {
-            if (int.TryParse(IndexTextBox.Text, out int index))
+            if (IndexResultBlock.Visibility == Visibility.Visible)
             {
-                try
-                {
-                    IndexResultBlock.Text = _manager[index].GetDetails();
-                }
-                catch (System.IndexOutOfRangeException ex)
-                {
-                    IndexResultBlock.Text = ex.Message;
-                }
+                IndexResultBlock.Visibility = Visibility.Collapsed;
+                IndexResultBlock.Text = "";
+                ShowIndexButton.Content = "Показати";
             }
             else
             {
-                IndexResultBlock.Text = "Введіть коректний індекс.";
+                if (int.TryParse(IndexTextBox.Text, out int idx))
+                {
+                    try
+                    {
+                        IndexResultBlock.Text = _manager[idx].GetDetails();
+                        IndexResultBlock.Foreground = new SolidColorBrush(
+                            (Color)ColorConverter.ConvertFromString("#C6A75E"));
+                    }
+                    catch (System.IndexOutOfRangeException ex)
+                    {
+                        IndexResultBlock.Text = ex.Message;
+                        IndexResultBlock.Foreground = new SolidColorBrush(Colors.Red);
+                    }
+                }
+                else
+                {
+                    IndexResultBlock.Text = "Введіть коректний індекс.";
+                    IndexResultBlock.Foreground = new SolidColorBrush(Colors.Red);
+                }
+
+                IndexResultBlock.Visibility = Visibility.Visible;
+                ShowIndexButton.Content = "Приховати";
             }
         }
 
         private void ShowByIndex_Click2(object sender, RoutedEventArgs e)
         {
-            if (int.TryParse(IndexSearchTextBox.Text, out int index))
+            if (int.TryParse(IndexSearchTextBox.Text, out int idx))
             {
                 try
                 {
-                    SearchResultBlock.Text = _manager[index].GetDetails();
+                    SearchResultBlock.Text = _manager[idx].GetDetails();
                     SearchResultBorder.Visibility = Visibility.Visible;
                 }
                 catch (System.IndexOutOfRangeException ex)
@@ -589,47 +754,61 @@ namespace OOPWPFProject
         {
             var a = GetOrderByIndex(IndexATextBox.Text, out string errA);
             var b = GetOrderByIndex(IndexBTextBox.Text, out string errB);
-
-            if (errA != null)
-                ShowOperatorResult(errA);
-            else if (errB != null)
-                ShowOperatorResult(errB);
-            else
-                ShowOperatorResult($"Результат (A + B):\n{(a + b).GetDetails()}");
+            if (errA != null) ShowOperatorResult(errA);
+            else if (errB != null) ShowOperatorResult(errB);
+            else ShowOperatorResult($"Результат (A + B):\n{(a + b).GetDetails()}");
         }
 
         private void OperatorSub_Click(object sender, RoutedEventArgs e)
         {
             var a = GetOrderByIndex(IndexATextBox.Text, out string errA);
             var b = GetOrderByIndex(IndexBTextBox.Text, out string errB);
-
-            if (errA != null)
-                ShowOperatorResult(errA);
-            else if (errB != null)
-                ShowOperatorResult(errB);
-            else
-                ShowOperatorResult($"Результат (A − B):\n{(a - b).GetDetails()}");
+            if (errA != null) ShowOperatorResult(errA);
+            else if (errB != null) ShowOperatorResult(errB);
+            else ShowOperatorResult($"Результат (A − B):\n{(a - b).GetDetails()}");
         }
 
         private void OperatorGreater_Click(object sender, RoutedEventArgs e)
         {
             var a = GetOrderByIndex(IndexATextBox.Text, out string errA);
             var b = GetOrderByIndex(IndexBTextBox.Text, out string errB);
-
-            if (errA != null)
-                ShowOperatorResult(errA);
-            else if (errB != null)
-                ShowOperatorResult(errB);
-            else
-                ShowOperatorResult((a > b)
-                    ? $"✔ A має вищу ціну ({a.Price:F2} грн > {b.Price:F2} грн)"
-                    : $"✘ A не має вищої ціни ({a.Price:F2} грн ≤ {b.Price:F2} грн)");
+            if (errA != null) ShowOperatorResult(errA);
+            else if (errB != null) ShowOperatorResult(errB);
+            else ShowOperatorResult((a > b)
+                ? $"✔ A має вищу ціну ({a.Price:F2} грн > {b.Price:F2} грн)"
+                : $"✘ A не має вищої ціни ({a.Price:F2} грн ≤ {b.Price:F2} грн)");
         }
 
         private void ShowOperatorResult(string text)
         {
             OperatorResultBlock.Text = text;
             OperatorResultBorder.Visibility = Visibility.Visible;
+        }
+
+        private void GenerateReceipt_Click(object sender, RoutedEventArgs e)
+        {
+            if (!(OrdersDataGrid.SelectedItem is OrderViewModel selectedVm))
+            {
+                ShowToast("✘ Оберіть замовлення для формування чеку", false);
+            }
+            else
+            {
+                int index = Orders.IndexOf(selectedVm);
+                var order = _manager[index];
+
+                try
+                {
+                    string path = ReceiptGenerator.Generate(order);
+                    Logger.Log("Чек", $"Сформовано PDF-чек для '{order.ProductName}'");
+                    ShowToast($"✔ Чек збережено");
+                    UpdateStatusBar($"Чек: {path}");
+                    Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
+                }
+                catch (Exception ex)
+                {
+                    ShowToast($"✘ Помилка генерації чеку: {ex.Message}", false);
+                }
+            }
         }
     }
 
@@ -643,16 +822,24 @@ namespace OOPWPFProject
     public class OrderViewModel
     {
         private readonly OrderBase _order;
-        public OrderViewModel(OrderBase order) => _order = order;
+        private readonly int _index;
 
+        public OrderViewModel(OrderBase order, int index)
+        {
+            _order = order;
+            _index = index;
+        }
+
+        public string Index => $"#{_index}";
         public string ProductName => _order.ProductName;
         public int Quantity => _order.Quantity;
         public double Price => _order.Price;
         public double Total => _order.Total;
+        public string CreatedAt => _order.CreatedAt;
         public string Details => _order.GetDetails().Replace("\n", "; ");
         public string OrderState => _order is IOrderTrackable t ? t.OrderState : "-";
         public string AssignedCourier => _order is IOrderTrackable t2 ? t2.AssignedCourier : "-";
         public string ReadyForPickup => _order is IOrderTrackable t3
-                                        ? (t3.IsReadyForPickup() ? "✔" : "✘") : "-";
+                                         ? (t3.IsReadyForPickup() ? "✔" : "✘") : "-";
     }
 }
