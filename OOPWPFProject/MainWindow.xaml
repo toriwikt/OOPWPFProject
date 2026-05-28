@@ -511,15 +511,6 @@
                         </WrapPanel>
                     </Border>
 
-                    <!-- Тост над кнопками -->
-                    <Border DockPanel.Dock="Bottom" x:Name="ToastBorder" Background="#2E7653"
-                            CornerRadius="8" Padding="12,10" Margin="0,4,0,0"
-                            Visibility="Collapsed" HorizontalAlignment="Right">
-                        <TextBlock x:Name="ToastText" Text=""
-                                   Foreground="#E8DCC8" FontFamily="Segoe UI" FontSize="13"
-                                   TextWrapping="Wrap"/>
-                    </Border>
-
                     <!-- Кнопки дій -->
                     <WrapPanel DockPanel.Dock="Bottom" Margin="0,4,0,0">
                         <Button x:Name="DeleteButton" Content="🗑 Видалити"
@@ -882,5 +873,20 @@
                 </Grid>
             </Border>
         </Grid>
+
+        <!-- Тост — поверх усього UI, не впливає на layout -->
+        <Border x:Name="ToastBorder"
+            Background="#2E7653"
+            CornerRadius="8" Padding="14,10"
+            Visibility="Collapsed"
+            Panel.ZIndex="999"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Bottom"
+            Margin="16,0,0,245"
+            MaxWidth="208">
+            <TextBlock x:Name="ToastText" Text=""
+                   Foreground="#E8DCC8" FontFamily="Segoe UI" FontSize="12"
+                   TextWrapping="Wrap"/>
+        </Border>
     </Grid>
 </Window>

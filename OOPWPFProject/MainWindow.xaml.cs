@@ -11,6 +11,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Controls.Primitives;
 
 namespace OOPWPFProject
 {
@@ -348,8 +349,29 @@ namespace OOPWPFProject
             {
                 try
                 {
+                    const char Sep = ';';
+
+                    // Екранує поле: загортає в лапки, якщо містить роздільник, лапки або перенос рядка
+                    string Q(string value)
+                    {
+                        if (value == null) value = "";
+                        if (value.IndexOfAny(new[] { Sep, '"', '\n', '\r' }) >= 0)
+                            return "\"" + value.Replace("\"", "\"\"") + "\"";
+                        return value;
+                    }
+
+                    // Число у форматі Excel поточної локалі (крапка або кома залежно від ОС)
+                    string N(double v) => v.ToString("F2", System.Globalization.CultureInfo.CurrentCulture);
+
                     var sb = new StringBuilder();
-                    sb.AppendLine("Індекс,Назва товару,Кількість,Ціна,Сума,Тип,Статус,Кур'єр,Готове,Дата");
+                    // sep= підказка для Excel — автоматично обирає роздільник
+                    sb.AppendLine($"sep={Sep}");
+                    sb.AppendLine(string.Join(Sep.ToString(), new[]
+                    {
+                        "Індекс", "Назва товару", "Кількість", "Ціна (грн)", "Сума (грн)",
+                        "Тип", "Статус", "Кур'єр", "Готове до отримання", "Дата створення",
+                        "Адреса / Місце", "Трекінг / Час"
+                    }));
 
                     for (int i = 0; i < _manager.Count; i++)
                     {
@@ -360,13 +382,38 @@ namespace OOPWPFProject
                         string ready = order is IOrderTrackable t3
                             ? (t3.IsReadyForPickup() ? "Так" : "Ні") : "-";
 
-                        sb.AppendLine($"{i},{order.ProductName},{order.Quantity}," +
-                                      $"{order.Price:F2},{order.Total:F2}," +
-                                      $"{type},{status},{courier},{ready},{order.CreatedAt}");
+                        string extra1 = "", extra2 = "";
+                        if (order is OnlineOrder o)
+                        {
+                            extra1 = o.DeliveryAddress ?? "";
+                            extra2 = o.TrackingNumber ?? "";
+                        }
+                        else if (order is StoreOrder s)
+                        {
+                            extra1 = s.StoreLocation ?? "";
+                            extra2 = s.PickupTime ?? "";
+                        }
+
+                        sb.AppendLine(string.Join(Sep.ToString(), new[]
+                        {
+                            Q(i.ToString()),
+                            Q(order.ProductName),
+                            Q(order.Quantity.ToString()),
+                            Q(N(order.Price)),
+                            Q(N(order.Total)),
+                            Q(type),
+                            Q(status),
+                            Q(courier),
+                            Q(ready),
+                            Q(order.CreatedAt),
+                            Q(extra1),
+                            Q(extra2)
+                        }));
                     }
 
-                    File.WriteAllText(dialog.FileName, sb.ToString(), Encoding.UTF8);
-                    Logger.Log("Експорт", $"Експортовано {_manager.Count} замовлень");
+                    // Windows-1251 — Excel на Windows коректно читає кирилицю без налаштувань
+                    File.WriteAllText(dialog.FileName, sb.ToString(), Encoding.GetEncoding(1251));
+                    Logger.Log("Експорт", $"Експортовано {_manager.Count} замовлень до {dialog.FileName}");
                     ShowToast($"✔ Експортовано {_manager.Count} замовлень");
                     UpdateStatusBar($"Експорт завершено: {dialog.FileName}");
                 }
@@ -666,7 +713,7 @@ namespace OOPWPFProject
             }
         }
 
-       
+
 
 
         private void ShowByIndex_Click(object sender, RoutedEventArgs e)
